@@ -1,0 +1,39 @@
+name: update-cask
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump to the latest upstream release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag=$(gh release view --repo gauthierpiarrette/highball --json tagName -q .tagName)
+          version="${tag#v}"
+          current=$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/highball.rb)
+          if [ "$version" = "$current" ]; then
+            echo "cask is already at $version"
+            exit 0
+          fi
+          echo "bumping $current -> $version"
+          # Fail loudly if a release ever ships without the DMG, rather than committing a
+          # cask that points at a 404.
+          curl -fsSL -o /tmp/Highball.dmg \
+            "https://github.com/gauthierpiarrette/highball/releases/download/$tag/Highball.dmg"
+          sha=$(sha256sum /tmp/Highball.dmg | cut -d' ' -f1)
+          sed -i "s|^  version \".*\"$|  version \"$version\"|" Casks/highball.rb
+          sed -i "s|^  sha256 \".*\"$|  sha256 \"$sha\"|" Casks/highball.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "highball $version"
+          git push

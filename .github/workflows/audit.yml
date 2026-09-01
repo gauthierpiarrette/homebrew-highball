@@ -1,0 +1,41 @@
+name: audit
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# macos-15 runners are arm64, which is what the cask requires, so the install
+# test below exercises the same path a real user takes.
+jobs:
+  audit:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: homebrew-highball
+
+      - name: Link the checkout in as a real tap
+        run: |
+          set -euo pipefail
+          dest="$(brew --repository)/Library/Taps/gauthierpiarrette"
+          mkdir -p "$dest"
+          ln -s "$GITHUB_WORKSPACE/homebrew-highball" "$dest/homebrew-highball"
+          brew tap | grep gauthierpiarrette
+
+      - name: Style and audit
+        run: |
+          brew style gauthierpiarrette/highball/highball
+          brew audit --cask --online --strict gauthierpiarrette/highball/highball
+
+      - name: Install, verify the app landed, uninstall
+        run: |
+          set -euo pipefail
+          brew install --cask gauthierpiarrette/highball/highball
+          test -x "/Applications/Highball.app/Contents/MacOS/Highball"
+          # The download is checksummed by brew; assert the installed bundle is the signed,
+          # notarized one rather than trusting the sha256 alone.
+          codesign -dv --verbose=2 /Applications/Highball.app 2>&1 | grep -q 'TeamIdentifier=B95M7DARU4'
+          spctl -a -t exec -vv /Applications/Highball.app 2>&1 | grep -q 'source=Notarized Developer ID'
+          brew uninstall --cask gauthierpiarrette/highball/highball
+          test ! -e "/Applications/Highball.app"
