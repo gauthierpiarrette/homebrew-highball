@@ -13,19 +13,18 @@ cask "highball" do
     strategy :github_latest
   end
 
-  # Highball updates itself through Sparkle. Without this, brew would try to manage
-  # versions too and report the app as outdated the moment it self-updates.
+  # Highball updates itself through Sparkle. Without this, brew would manage versions too
+  # and report the app as outdated the moment it self-updates.
   auto_updates true
-
-  # The engine is x86_64 Wine under Rosetta; the app itself is arm64-only.
+  # The Wine engine is x86_64 under Rosetta, but the app bundle itself is arm64-only.
   depends_on arch: :arm64
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Highball.app"
 
-  # Application Support holds engines, bottles and installed games, so this can be
-  # tens of gigabytes. Only `brew uninstall --zap` touches it; a plain uninstall
-  # leaves your games alone.
+  # Application Support holds every engine, bottle and installed game, so this is usually
+  # tens of gigabytes. Only `brew uninstall --zap` touches it; a plain uninstall leaves
+  # games in place.
   zap trash: [
     "~/Library/Application Support/Highball",
     "~/Library/Caches/app.highball.Highball",
