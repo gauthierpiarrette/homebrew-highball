@@ -1,6 +1,6 @@
 cask "highball" do
-  version "0.9.23"
-  sha256 "58efaa2c3fad8cbaaab3670ca5149866b584a7e1245f95454c6c13c6f2031fd5"
+  version "0.9.28"
+  sha256 "bd95eaac30f02c92a1abfda6ef9867763eebd64c711a0a2fec108d523b0c2d55"
 
   url "https://github.com/gauthierpiarrette/highball/releases/download/v#{version}/Highball.dmg"
   name "Highball"
